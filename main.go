@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"reflect"
 	"github.com/pborman/uuid"
+	"strings"
 )
 
 type Location struct {
@@ -171,9 +172,10 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	for _, item := range searchResult.Each(reflect.TypeOf(typ)) { // instance of
 		p := item.(Post) // p = (Post) item
 		fmt.Printf("Post by %s: %s at lat %v and lon %v\n", p.User, p.Message, p.Location.Lat, p.Location.Lon)
-		// TODO(student homework): Perform filtering based on keywords such as web spam etc.
-		ps = append(ps, p)
-
+		// TODO: Perform filtering based on keywords such as web spam etc.
+		if !containsFilteredWords(&p.Message) {
+			ps = append(ps, p)
+		}
 	}
 	js, err := json.Marshal(ps)
 	if err != nil {
@@ -186,6 +188,21 @@ func handlerSearch(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 
 
+
+
+}
+
+func containsFilteredWords(s *string) bool {
+	filteredWords := []string{
+		"fuck",
+		"100",
+	}
+	for _, word := range filteredWords {
+		if strings.Contains(*s, word) {
+			return true
+		}
+	}
+	return false
 }
 
 
