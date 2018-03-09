@@ -12,14 +12,15 @@ import (
 	"strings"
 
 	//other libs
-	"context"
+	//"context"
 	"cloud.google.com/go/storage"
 
-	"cloud.google.com/go/bigtable"
-
+	//"cloud.google.com/go/bigtable"
 
 	"io"
 )
+
+
 
 type Location struct {
 	Lat float64 `json:"lat"`
@@ -27,6 +28,7 @@ type Location struct {
 }
 
 type Post struct {
+	// `json:"user"` is for the json parsing of this User field. Otherwise, by default it's 'User'.
 	User string `json:"user"`
 	Message  string  `json:"message"`
 	Location Location `json:"location"`
@@ -93,16 +95,18 @@ func main() {
 
 
 func handlerPost(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Access-Control-Allow-Origin", "*")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+	//w.Header().Set("Content-Type", "application/json")
+	//w.Header().Set("Access-Control-Allow-Origin", "*")
+	//w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
 
 
 	// 32 << 20 is the maxMemory param for ParseMultipartForm, equals to 32MB (1MB = 1024 * 1024 bytes = 2^20 bytes)
 	// After you call ParseMultipartForm, the file will be saved in the server memory with maxMemory size.
 	// If the file size is larger than maxMemory, the rest of the data will be saved in a system temporary file.
-	r.ParseMultipartForm(32 << 20)
 
+	//r.ParseMultipartForm(32 << 20)
+
+/*
 	// Parse from form data.
 	fmt.Printf("Received one post request %s\n", r.FormValue("message"))
 	lat, _ := strconv.ParseFloat(r.FormValue("lat"), 64)
@@ -138,11 +142,30 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 
 	// Update the media link after saving to GCS.
 	p.Url = attrs.MediaLink
+*/
+
+	// Parse from body of request to get a json object.
+	fmt.Println("Received one post request")
+	decoder := json.NewDecoder(r.Body)
+	var p Post
+	if err := decoder.Decode(&p); err != nil {
+		panic(err)
+		return
+	}
+
+
+
+	id := uuid.New()
+
+	fmt.Printf("Post is saved to Index: %s\n", p.Message)
 
 	// Save to ES.
 	saveToES(p, id)
 
+	/*
 	// Save to BigTable.
+
+
 	bt_client, err := bigtable.NewClient(ctx, PROJECT_ID, BT_INSTANCE)
 	if err != nil {
 		panic(err)
@@ -166,10 +189,12 @@ func handlerPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	fmt.Printf("Post is saved to BigTable: %s\n", p.Message)
-
+	*/ //save toBigTable
 
 }
 
+
+/*
 func saveToGCS(ctx context.Context, r io.Reader, bucketName, name string) (*storage.ObjectHandle, *storage.ObjectAttrs, error) {
 	// Student questions
 	client, err := storage.NewClient(ctx)
@@ -203,8 +228,7 @@ func saveToGCS(ctx context.Context, r io.Reader, bucketName, name string) (*stor
 	return obj, attrs, err
 
 }
-
-
+*/ // save to GCS
 
 // Save a post to ElasticSearch
 func saveToES(p *Post, id string) {
